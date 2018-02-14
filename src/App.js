@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import mySocket from "socket.io-client";
+import Room from "./comp/Room.js";
 
 class App extends Component {
   constructor(props){
@@ -9,25 +10,41 @@ class App extends Component {
           myImg:require("./img/cat1.png"),
           myImg2:require("./img/cat2.png"),
           allusers:[],
-          myId:null
+          myId:null,
+          showDisplay:false
       }
        this.handleImage = this.handleImage.bind(this);
+       this.handleDisplay = this.handleDisplay.bind(this);
   }
- componentDidMount(){
+  componentDidMount(){
      
-     this.socket = mySocket("https://advserver2.herokuapp.com/");
+     this.socket = mySocket("http://localhost:10000/");
      
      this.socket.on("userjoined", (data)=>{
         this.setState({
             allusers:data
-        }) 
-     });
+        });
+      });
      
      this.socket.on("yourid", (data)=>{
          this.setState({
              myId:data
-         })
-     })
+         });
+         this.refs.thedisplay.addEventListener("mousemove", (ev)=>{
+         if(this.state.myId === null){
+             return false;
+         }
+         this.refs["u"+this.state.myId].style.left = ev.pageX + "px";
+         this.refs["u"+this.state.myId].style.top = ev.pageY + "px";
+         
+         this.socket.emit("mymove", {
+             x:ev.pageX,
+             y:ev.pageY,
+             id:this.state.myId,
+             src:this.refs["u"+this.state.myId].src
+          })
+        }); 
+     });
      
      this.socket.on("newmove", (data)=>{
          this.refs["u"+data.id].style.left = data.x + "px";
@@ -35,6 +52,7 @@ class App extends Component {
          this.refs["u"+data.id].src = data.src;
      })
      
+     /*
      this.refs.thedisplay.addEventListener("mousemove", (ev)=>{
          if(this.state.myId === null){
              return false;
@@ -49,10 +67,20 @@ class App extends Component {
              src:this.refs["u"+this.state.myId].src
          })
      }); 
+     */
   }
   
   handleImage(evt){
       this.refs["u"+this.state.myId].src = evt.target.src;
+  }
+    
+    
+  handleDisplay(roomString){
+      this.setState({
+          showDisplay:true
+      });
+      
+      this.socket.emit("joinroom",roomString);
   }
     
   render() {
@@ -62,17 +90,32 @@ class App extends Component {
             <img ref={"u"+obj} className="allImgs" src={this.state.myImg} height={50} key={i}/>
         )
     });
-    return (
-      <div className="App">
-        <div ref="thedisplay" id="display">
+      
+    var comp = null;
+    
+    if(this.state.showDisplay === false){
+        comp = <Room
+              handleDisplay={this.handleDisplay}
+            />;
+    }else{
+        comp = 
+    
+    comp = (
+        <div>
+            <div ref="thedisplay" id="display">
             {allimgs}
-            
         </div>
         <div id="controls">
             {this.state.myId}
             <img onClick={this.handleImage} src={this.state.myImg} height={50}/>
             <img onClick={this.handleImage} src={this.state.myImg2} height={50}/>
         </div>
+        </div>
+            )
+        }
+    return (
+      <div className="App">
+        {comp}
       </div>
     );
   }
