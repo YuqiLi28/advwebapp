@@ -11,7 +11,8 @@ class App extends Component {
           myImg2:require("./img/cat2.png"),
           allusers:[],
           myId:null,
-          showDisplay:false
+          showDisplay:false,
+          stickers:[]
       }
        this.handleImage = this.handleImage.bind(this);
        this.handleDisplay = this.handleDisplay.bind(this);
@@ -44,16 +45,30 @@ class App extends Component {
              src:this.refs["u"+this.state.myId].src
           })
         }); 
+         
+        this.refs.thedisplay.addEventListener("click",(ev)=>{
+          this.socket.emit("stick", {
+              x:ev.pageX,
+              y:ev.pageY,
+              src:this.refs["u"+this.state.myId].src
+          });
+      })
      });
      
+     this.socket.on("newsticker", (data)=>{
+         this.setState({
+             stickers:data
+         });
+     });
+      
      this.socket.on("newmove", (data)=>{
          this.refs["u"+data.id].style.left = data.x + "px";
          this.refs["u"+data.id].style.top = data.y + "px";
          this.refs["u"+data.id].src = data.src;
      })
      
-     /*
-     this.refs.thedisplay.addEventListener("mousemove", (ev)=>{
+     
+     /*this.refs.thedisplay.addEventListener("mousemove", (ev)=>{
          if(this.state.myId === null){
              return false;
          }
@@ -66,8 +81,9 @@ class App extends Component {
              id:this.state.myId,
              src:this.refs["u"+this.state.myId].src
          })
-     }); 
-     */
+     }); */
+     
+      
   }
   
   handleImage(evt){
@@ -90,6 +106,14 @@ class App extends Component {
             <img ref={"u"+obj} className="allImgs" src={this.state.myImg} height={50} key={i}/>
         )
     });
+    
+    var allstickers = this.state.stickers.map((obj,i)=>{
+        var mystyle = {left:obj.x, top:obj.y};
+        
+        return(
+            <img style={mystyle} key={i} src={obj.src} height={50} className="allImgs" />
+        )
+    })  
       
     var comp = null;
     
@@ -104,6 +128,7 @@ class App extends Component {
         <div>
             <div ref="thedisplay" id="display">
             {allimgs}
+            {allstickers}
         </div>
         <div id="controls">
             {this.state.myId}
